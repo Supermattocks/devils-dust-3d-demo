@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="sv"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Devil's Dust — Western World</title>
+<style>html,body{margin:0;overflow:hidden;background:#211710;color:white;font:14px system-ui}canvas{display:block;width:100vw;height:100dvh;touch-action:none}header{position:absolute;top:env(safe-area-inset-top,12px);left:18px;text-shadow:0 2px 6px #432;pointer-events:none}h1{font-size:24px;letter-spacing:3px;margin:12px 0 0}small{letter-spacing:2px}#status{position:absolute;right:10px;top:15px;background:#25190dba;padding:8px;border-radius:8px;font-size:12px}footer{position:absolute;bottom:22px;left:0;right:0;text-align:center;text-shadow:0 2px 5px #222;pointer-events:none}</style></head>
+<body><canvas id="view"></canvas><header><h1>DEVIL'S DUST</h1><small>WESTERN WORLD · TEST 02</small></header><div id="status">Startar…</div><footer>Dra för att rotera · Nyp för att zooma</footer>
+<script>
+(function(){
+const canvas=document.getElementById('view'),status=document.getElementById('status');
+window.onerror=function(m){status.textContent='Fel: '+m};
+try{
+const gl=canvas.getContext('webgl',{antialias:true,alpha:false})||canvas.getContext('experimental-webgl');
+if(!gl)throw Error('WebGL saknas');
+const vertex='attribute vec3 p;attribute vec3 color;uniform mat4 matrix;varying vec3 v;void main(){v=color;gl_Position=matrix*vec4(p,1.);}';
+const fragment='precision mediump float;varying vec3 v;void main(){gl_FragColor=vec4(v,1.);}';
+function shader(type,src){const s=gl.createShader(type);gl.shaderSource(s,src);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw Error(gl.getShaderInfoLog(s));return s}
+const prog=gl.createProgram();gl.attachShader(prog,shader(gl.VERTEX_SHADER,vertex));gl.attachShader(prog,shader(gl.FRAGMENT_SHADER,fragment));gl.linkProgram(prog);if(!gl.getProgramParameter(prog,gl.LINK_STATUS))throw Error(gl.getProgramInfoLog(prog));gl.useProgram(prog);
+const verts=[],colors=[];function tri(a,b,c,col){for(const p of [a,b,c]){verts.push(...p);colors.push(...col)}}
+function quad(a,b,c,d,col){tri(a,b,c,col);tri(a,c,d,col)}
+function cube(x,y,z,w,h,d,col){let X=x+w/2,Y=y+h/2,Z=z+d/2,x0=x-w/2,y0=y-h/2,z0=z-d/2;quad([x0,y0,Z],[X,y0,Z],[X,Y,Z],[x0,Y,Z],col);quad([X,y0,z0],[x0,y0,z0],[x0,Y,z0],[X,Y,z0],col.map(v=>v*.75));quad([x0,Y,Z],[X,Y,Z],[X,Y,z0],[x0,Y,z0],col.map(v=>v*1.13));quad([x0,y0,z0],[x0,y0,Z],[x0,Y,Z],[x0,Y,z0],col.map(v=>v*.83));quad([X,y0,Z],[X,y0,z0],[X,Y,z0],[X,Y,Z],col.map(v=>v*.9))}
+function pyramid(x,z,r,h,col){const a=[x-r,0,z-r],b=[x+r,0,z-r],c=[x+r,0,z+r],d=[x-r,0,z+r],t=[x,h,z];tri(a,b,t,col);tri(b,c,t,col.map(v=>v*.85));tri(c,d,t,col);tri(d,a,t,col.map(v=>v*.7))}
+cube(0,-.35,0,250,.5,250,[.63,.42,.24]);cube(0,-.06,0,12,.08,120,[.52,.32,.17]);
+function building(x,z,w,h,d,col){cube(x,h/2,z,w,h,d,col);cube(x,h+.1,z,w+1,.3,d+1,[.31,.19,.15]);const side=x<0?1:-1;cube(x,h+.9,z+side*d/2,w+1,1.7,.25,col);cube(x,1.25,z+side*(d/2+.13),1.7,2.5,.16,[.16,.09,.07]);for(const off of [-w*.29,w*.29]){cube(x+off,2.7,z+side*(d/2+.14),1.5,1.5,.15,[.18,.32,.34]);cube(x+off,2.7,z+side*(d/2+.23),.13,1.5,.16,[.68,.48,.3])}for(const off of [-w*.42,w*.42])cube(x+off,1.2,z+side*(d/2+1.4),.3,2.4,.3,[.3,.18,.11]);cube(x,2.4,z+side*(d/2+1.4),w,.2,2.6,[.36,.22,.14])}
+building(-11,-20,10,6.2,9,[.62,.34,.21]);building(11,-20,9,5.6,8,[.69,.53,.34]);building(-11,0,9,5.2,8,[.5,.37,.29]);building(11,0,10,6.5,9,[.55,.28,.17]);building(-11,20,9,5.8,9,[.66,.49,.31]);building(11,20,10,5.2,9,[.56,.42,.3]);
+function cactus(x,z,s){let c=[.15,.32,.19];cube(x,2*s,z,.8*s,4*s,.8*s,c);cube(x-1*s,2*s,z,2*s,.5*s,.6*s,c);cube(x-1.8*s,2.6*s,z,.5*s,1.8*s,.6*s,c);cube(x+1*s,2.8*s,z,2*s,.5*s,.6*s,c);cube(x+1.8*s,3.4*s,z,.5*s,1.8*s,.6*s,c)}
+let seed=37;function rnd(){seed=(1664525*seed+1013904223)>>>0;return seed/4294967296}
+for(let i=0;i<75;i++){let x=(rnd()-.5)*185,z=(rnd()-.5)*185;if(Math.abs(x)<22&&Math.abs(z)<40)continue;if(i%3===0)cactus(x,z,.65+rnd()*.65);else pyramid(x,z,1+rnd()*2,1+rnd()*2,[.47,.32,.23])}
+for(let i=0;i<30;i++){let a=i*Math.PI*2/30,r=100+rnd()*25;pyramid(Math.sin(a)*r,Math.cos(a)*r,12+rnd()*13,18+rnd()*25,[.51,.31,.23])}
+cube(23,1.8,5,4,.6,7,[.32,.2,.13]);for(const x of [20.7,25.3])for(const z of [2.5,7.5])cube(x,1,z,.35,2,2,[.15,.1,.08]);
+const pos=new Float32Array(verts),cols=new Float32Array(colors),n=verts.length/3;
+function attribute(name,data){const b=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,b);gl.bufferData(gl.ARRAY_BUFFER,data,gl.STATIC_DRAW);const loc=gl.getAttribLocation(prog,name);gl.enableVertexAttribArray(loc);gl.vertexAttribPointer(loc,3,gl.FLOAT,false,0,0)}
+attribute('p',pos);attribute('color',cols);const uniform=gl.getUniformLocation(prog,'matrix');gl.enable(gl.DEPTH_TEST);gl.clearColor(.83,.62,.42,1);
+let yaw=.48,pitch=.65,dist=70;const fingers=new Map();let pinch=0;
+canvas.addEventListener('pointerdown',e=>{canvas.setPointerCapture(e.pointerId);fingers.set(e.pointerId,[e.clientX,e.clientY])});
+canvas.addEventListener('pointermove',e=>{if(!fingers.has(e.pointerId))return;const old=fingers.get(e.pointerId),dx=e.clientX-old[0],dy=e.clientY-old[1];fingers.set(e.pointerId,[e.clientX,e.clientY]);if(fingers.size===1){yaw-=dx*.007;pitch=Math.max(.14,Math.min(1.42,pitch+dy*.006))}else{const a=[...fingers.values()],d=Math.hypot(a[0][0]-a[1][0],a[0][1]-a[1][1]);if(pinch)dist=Math.max(12,Math.min(145,dist*pinch/d));pinch=d}});
+for(const ev of ['pointerup','pointercancel'])canvas.addEventListener(ev,e=>{fingers.delete(e.pointerId);pinch=0});
+canvas.addEventListener('wheel',e=>{e.preventDefault();dist=Math.max(12,Math.min(145,dist*(1+e.deltaY*.001)))},{passive:false});
+function normalize(v){const d=Math.hypot(...v);return v.map(x=>x/d)}
+function cross(a,b){return [a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]]}
+function render(){const w=canvas.clientWidth,h=canvas.clientHeight,dpr=Math.min(devicePixelRatio||1,1.6);if(canvas.width!==Math.round(w*dpr)||canvas.height!==Math.round(h*dpr)){canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr);gl.viewport(0,0,canvas.width,canvas.height)}
+const eye=[Math.sin(yaw)*Math.cos(pitch)*dist,Math.sin(pitch)*dist+3,Math.cos(yaw)*Math.cos(pitch)*dist],center=[0,2,0],f=normalize(center.map((x,i)=>x-eye[i])),r=normalize(cross(f,[0,1,0])),u=cross(r,f),aspect=w/h,t=1/Math.tan(Math.PI/6);
+const view=[r[0],u[0],-f[0],0,r[1],u[1],-f[1],0,r[2],u[2],-f[2],0,-r.reduce((s,x,i)=>s+x*eye[i],0),-u.reduce((s,x,i)=>s+x*eye[i],0),f.reduce((s,x,i)=>s+x*eye[i],0),1];
+const projection=[t/aspect,0,0,0,0,t,0,0,0,0,-1.001,-1,0,0,-.2001,0];const m=new Float32Array(16);for(let c=0;c<4;c++)for(let row=0;row<4;row++)for(let k=0;k<4;k++)m[c*4+row]+=projection[k*4+row]*view[c*4+k];
+gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);gl.uniformMatrix4fv(uniform,false,m);gl.drawArrays(gl.TRIANGLES,0,n);requestAnimationFrame(render)}
+status.textContent='3D AKTIV';render();
+}catch(err){status.textContent='Fel: '+err.message;console.error(err)}
+})();
+</script></body></html>
